@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Authors>liliekintsugi</Authors>
     <AssemblyName>XIVPathAutopilot</AssemblyName>
-    <Version>0.1.7.0</Version>
+    <Version>0.1.8.0</Version>
     <Description>Experimental point-to-point navigation assistant for XIVPath.</Description>
     <PackageProjectUrl>https://github.com/liliekintsugi/xivpath-autopilot</PackageProjectUrl>
     <LangVersion>latest</LangVersion>

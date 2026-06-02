@@ -84,7 +84,17 @@ public sealed class QuestDestinationProvider(IPluginLog log)
                 continue;
             }
 
-            if (result.Any(r => r.QuestId == entry.QuestId))
+            var alreadyPresent = false;
+            for (var idx = 0; idx < result.Count; idx++)
+            {
+                if (result[idx].QuestId == entry.QuestId)
+                {
+                    alreadyPresent = true;
+                    break;
+                }
+            }
+
+            if (alreadyPresent)
             {
                 continue;
             }
