@@ -94,7 +94,7 @@ public sealed class ConfigWindow : Window
             var labels = _questDestinations
                 .Select(q => q.TargetMapId != 0
                     ? $"{q.Label} (Map {q.TargetMapId})"
-                    : $"{q.Label} (Quest map)")
+                    : $"{q.Label} (Map inconnue)")
                 .ToArray();
             ImGui.SetNextItemWidth(420);
             ImGui.Combo("##questDestinations", ref _selectedQuestDestination, labels, labels.Length);
@@ -103,11 +103,18 @@ public sealed class ConfigWindow : Window
                 _selectedQuestDestination < _questDestinations.Count &&
                 ImGui.Button("Open selected quest destination"))
             {
-                _questDestinationProvider.TryOpenQuestDestination(_questDestinations[_selectedQuestDestination]);
+                var selected = _questDestinations[_selectedQuestDestination];
+                _questDestinationProvider.TryOpenQuestDestination(selected);
             }
 
             ImGui.SameLine();
             ImGui.TextDisabled("Then place a flag and use Go To Flag");
+            if (_selectedQuestDestination >= 0 &&
+                _selectedQuestDestination < _questDestinations.Count &&
+                _questDestinations[_selectedQuestDestination].TargetMapId == 0)
+            {
+                ImGui.TextDisabled("Cette quete n'a pas de map cible fiable: ouvre le journal puis pose un flag.");
+            }
         }
         else
         {

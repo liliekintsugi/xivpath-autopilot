@@ -76,7 +76,7 @@ public sealed class AutoPilotController : IDisposable
             destination = snapped;
         }
 
-        var preferFlyParam = _config.PreferFlyingWhenPossible || _config.UseMountWhenPossible;
+        var preferFlyParam = _config.PreferFlyingWhenPossible;
         if (!_navmesh.TryStartMoveTo(destination, preferFlyParam))
         {
             Fail("Unable to start vnavmesh route.");
@@ -122,7 +122,7 @@ public sealed class AutoPilotController : IDisposable
 
         TryAutoMount();
 
-        var preferFlyParam = _config.PreferFlyingWhenPossible || _config.UseMountWhenPossible;
+        var preferFlyParam = _config.PreferFlyingWhenPossible;
         if (!_navmesh.TryStartMoveToFlag(preferFlyParam))
         {
             Fail("Unable to start move-to-flag.");
@@ -186,7 +186,7 @@ public sealed class AutoPilotController : IDisposable
                 _waitingForTeleportZoneChange = false;
                 _pendingFlagTerritoryId = 0;
                 TryAutoMount();
-                var preferFlyParam = _config.PreferFlyingWhenPossible || _config.UseMountWhenPossible;
+                var preferFlyParam = _config.PreferFlyingWhenPossible;
                 if (!_navmesh.TryStartMoveToFlag(preferFlyParam))
                 {
                     Fail("Teleported, but unable to start move-to-flag.");

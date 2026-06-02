@@ -139,28 +139,9 @@ public sealed class QuestDestinationProvider(IPluginLog log)
         {
             return TryOpenQuestMap(destination.TargetMapId);
         }
-
-        try
-        {
-            var mapAgent = AgentMap.Instance();
-            if (mapAgent == null || destination.QuestId == 0)
-            {
-                return false;
-            }
-
-            var info = stackalloc OpenMapInfo[1];
-            *info = default;
-            info->Type = MapType.QuestLog;
-            info->MapId = 0;
-            info->TerritoryId = 0;
-            info->QuestId = destination.QuestId;
-            mapAgent->OpenMap(info);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            log.Warning(ex, "[XIVPathAutopilot] Unable to open quest destination");
-            return false;
-        }
+        
+        // We only have an accepted quest id without a reliable target map.
+        // Opening quest-log map directly can land on arbitrary coordinates on some clients.
+        return false;
     }
 }
