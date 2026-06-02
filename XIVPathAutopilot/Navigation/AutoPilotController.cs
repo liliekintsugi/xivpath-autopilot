@@ -1,4 +1,5 @@
 using System.Numerics;
+using Dalamud.Game.Command;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Plugin.Services;
 using XIVPathAutopilot.Integration;
@@ -20,7 +21,7 @@ public sealed class AutoPilotController : IDisposable
     private readonly IFramework _framework;
     private readonly IPluginLog _log;
     private readonly ICondition _condition;
-    private readonly IChatGui _chatGui;
+    private readonly ICommandManager _commandManager;
     private readonly VNavmeshIpcClient _navmesh;
     private readonly Configuration _config;
     private DateTimeOffset _lastMountAttemptAt = DateTimeOffset.MinValue;
@@ -36,7 +37,7 @@ public sealed class AutoPilotController : IDisposable
         IFramework framework,
         IPluginLog log,
         ICondition condition,
-        IChatGui chatGui,
+        ICommandManager commandManager,
         VNavmeshIpcClient navmesh,
         Configuration config)
     {
@@ -44,7 +45,7 @@ public sealed class AutoPilotController : IDisposable
         _framework = framework;
         _log = log;
         _condition = condition;
-        _chatGui = chatGui;
+        _commandManager = commandManager;
         _navmesh = navmesh;
         _config = config;
 
@@ -185,7 +186,7 @@ public sealed class AutoPilotController : IDisposable
         if (_condition[ConditionFlag.Mounted]) return;
         if ((DateTimeOffset.UtcNow - _lastMountAttemptAt).TotalSeconds < 3) return;
 
-        if (_chatGui.SendMessage("/mount roulette"))
+        if (_commandManager.ProcessCommand("/mount roulette"))
         {
             _lastMountAttemptAt = DateTimeOffset.UtcNow;
         }

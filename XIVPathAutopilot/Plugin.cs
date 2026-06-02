@@ -23,7 +23,6 @@ public sealed class Plugin : IDalamudPlugin
         IClientState clientState,
         IFramework framework,
         ICondition condition,
-        IChatGui chatGui,
         IPluginLog log)
     {
         _commandManager = commandManager;
@@ -39,7 +38,7 @@ public sealed class Plugin : IDalamudPlugin
             framework,
             log,
             condition,
-            chatGui,
+            commandManager,
             navmesh,
             _configuration);
         _configWindow = new ConfigWindow(_configuration, _controller, mapConverter, questDestinations);
