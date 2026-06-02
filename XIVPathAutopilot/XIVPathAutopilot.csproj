@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Authors>liliekintsugi</Authors>
+    <AssemblyName>XIVPathAutopilot</AssemblyName>
+    <Version>0.1.0.0</Version>
+    <Description>Experimental point-to-point navigation assistant for XIVPath.</Description>
+    <PackageProjectUrl>https://github.com/liliekintsugi/xivpath-autopilot</PackageProjectUrl>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

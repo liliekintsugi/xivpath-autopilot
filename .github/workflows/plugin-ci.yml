@@ -1,0 +1,48 @@
+name: Plugin CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-plugin:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5.2.0
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore XIVPathAutopilot/XIVPathAutopilot.csproj
+
+      - name: Build
+        run: dotnet build XIVPathAutopilot/XIVPathAutopilot.csproj -c Release --no-restore -p:IsCI=true
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release-files
+          $releasePath = "XIVPathAutopilot/bin/Release"
+          if (!(Test-Path $releasePath)) {
+            Write-Error "Release output not found at $releasePath"
+            exit 1
+          }
+          Get-ChildItem -Recurse -Path $releasePath -Include "*.zip","*.json","*.dll" | ForEach-Object {
+            Copy-Item $_.FullName release-files/
+          }
+          if ((Get-ChildItem release-files/).Count -eq 0) {
+            Write-Error "No release files collected"
+            exit 1
+          }
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: XIVPathAutopilot-ci
+          path: release-files/

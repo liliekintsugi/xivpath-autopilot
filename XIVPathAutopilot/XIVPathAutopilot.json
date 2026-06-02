@@ -1,0 +1,15 @@
+{
+  "Author": "liliekintsugi",
+  "Name": "XIVPath Autopilot",
+  "Punchline": "Experimental point-to-point autopilot helper.",
+  "Description": "Manual destination autopilot scaffold for XIVPath. Uses vnavmesh IPC hooks when available.",
+  "InternalName": "XIVPathAutopilot",
+  "RepoUrl": "https://github.com/liliekintsugi/xivpath-autopilot",
+  "ApplicableVersion": "any",
+  "DalamudApiLevel": 15,
+  "Tags": [
+    "navigation",
+    "autopilot",
+    "xivpath"
+  ]
+}
