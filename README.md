@@ -4,8 +4,10 @@ Plugin Dalamud experimental pour piloter un deplacement vers une destination.
 
 ## Objectif
 
-- `Go to` manuel (coordonnees)
-- `Go to flag` (placeholder, selon support IPC vnavmesh)
+- `Go to` manuel (coordonnees monde)
+- `Go to` depuis coordonnees carte (conversion auto map -> monde)
+- `Go to flag` (lit le drapeau carte puis lance le pathfind)
+- Selecteur des destinations de quetes actives (ouvrir la carte cible)
 - Etat de navigation clair (idle/running/paused/arrived/failed)
 - Integration IPC `vnavmesh` (sans farming/automation bouclee)
 - Arret immediat manuel (`Stop`)
@@ -47,13 +49,7 @@ Ce repo est un squelette technique "MVP scaffold":
 - Preference vol (toggle)
 - Anti-stuck basique (distance mini + timeout stuck)
 
-Note: selon version de vnavmesh, certaines operations (notamment "flag") peuvent ne pas etre exposees en IPC.
-
-## Etape suivante recommandee
-
-1. Verifier les noms exacts IPC exposes par `vnavmesh` et les brancher dans `Integration/VNavmeshIpcClient.cs`.
-2. Ajouter un mode "Go to flag" (clic map -> destination).
-3. Ajouter un detecteur anti-stuck + timeout configurable.
+Note: pour une quete, le flow recommande est: selectionner la quete -> ouvrir la carte -> poser un drapeau -> "Go To Flag".
 
 ## GitHub Actions incluses
 

@@ -30,8 +30,10 @@ public sealed class Plugin : IDalamudPlugin
         _configuration.Initialize(pluginInterface);
 
         var navmesh = new VNavmeshIpcClient(pluginInterface, log);
+        var mapConverter = new MapCoordinateConverter();
+        var questDestinations = new QuestDestinationProvider(log);
         _controller = new AutoPilotController(clientState, framework, log, navmesh, _configuration);
-        _configWindow = new ConfigWindow(_configuration, _controller);
+        _configWindow = new ConfigWindow(_configuration, _controller, mapConverter, questDestinations);
 
         _windowSystem.AddWindow(_configWindow);
         pluginInterface.UiBuilder.Draw += _windowSystem.Draw;

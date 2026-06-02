@@ -51,6 +51,11 @@ public sealed class AutoPilotController : IDisposable
             return false;
         }
 
+        if (_navmesh.TrySnapToNearestPoint(destination, out var snapped))
+        {
+            destination = snapped;
+        }
+
         if (!_navmesh.TryStartMoveTo(destination, _config.PreferFlyingWhenPossible))
         {
             Fail("Unable to start vnavmesh route.");
@@ -73,7 +78,7 @@ public sealed class AutoPilotController : IDisposable
             return false;
         }
 
-        if (!_navmesh.TryStartMoveToFlag())
+        if (!_navmesh.TryStartMoveToFlag(_config.PreferFlyingWhenPossible))
         {
             Fail("Unable to start move-to-flag.");
             return false;

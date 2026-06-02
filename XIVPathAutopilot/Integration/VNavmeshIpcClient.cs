@@ -17,6 +17,8 @@ public sealed class VNavmeshIpcClient
     private readonly ICallGateSubscriber<bool> _isRunning;
     private readonly ICallGateSubscriber<bool> _pathfindInProgress;
     private readonly ICallGateSubscriber<bool, object> _setMovementAllowed;
+    private readonly ICallGateSubscriber<Vector3, float, float, Vector3?> _nearestPoint;
+    private readonly ICallGateSubscriber<Vector3?> _flagToPoint;
 
     public VNavmeshIpcClient(IDalamudPluginInterface pluginInterface, IPluginLog log)
     {
@@ -29,6 +31,9 @@ public sealed class VNavmeshIpcClient
         _pathfindInProgress = pluginInterface.GetIpcSubscriber<bool>("vnavmesh.SimpleMove.PathfindInProgress");
         _setMovementAllowed =
             pluginInterface.GetIpcSubscriber<bool, object>("vnavmesh.Path.SetMovementAllowed");
+        _nearestPoint =
+            pluginInterface.GetIpcSubscriber<Vector3, float, float, Vector3?>("vnavmesh.Query.Mesh.NearestPoint");
+        _flagToPoint = pluginInterface.GetIpcSubscriber<Vector3?>("vnavmesh.Query.Mesh.FlagToPoint");
     }
 
     public bool TryStartMoveTo(Vector3 destination, bool preferFlight)
@@ -44,10 +49,24 @@ public sealed class VNavmeshIpcClient
         }
     }
 
-    public bool TryStartMoveToFlag()
+    public bool TryStartMoveToFlag(bool preferFlight)
     {
-        _log.Warning("[XIVPathAutopilot] Move-to-flag IPC not implemented in this build");
-        return false;
+        try
+        {
+            var point = _flagToPoint.InvokeFunc();
+            if (point is null)
+            {
+                _log.Warning("[XIVPathAutopilot] No map flag found");
+                return false;
+            }
+
+            return _pathfindAndMoveTo.InvokeFunc(point.Value, preferFlight);
+        }
+        catch (Exception ex)
+        {
+            _log.Warning(ex, "[XIVPathAutopilot] vnavmesh move-to-flag IPC failed");
+            return false;
+        }
     }
 
     public bool TryStop()
@@ -102,6 +121,29 @@ public sealed class VNavmeshIpcClient
         catch
         {
             active = false;
+            return false;
+        }
+    }
+
+    public bool TrySnapToNearestPoint(Vector3 approximatePosition, out Vector3 snappedPosition)
+    {
+        try
+        {
+            // Search in a moderate local radius and wide vertical range.
+            var point = _nearestPoint.InvokeFunc(approximatePosition, 15.0f, 2048.0f);
+            if (point is null)
+            {
+                snappedPosition = approximatePosition;
+                return false;
+            }
+
+            snappedPosition = point.Value;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.Debug(ex, "[XIVPathAutopilot] vnavmesh nearest-point IPC unavailable");
+            snappedPosition = approximatePosition;
             return false;
         }
     }
