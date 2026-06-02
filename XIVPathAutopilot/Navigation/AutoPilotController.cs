@@ -23,12 +23,17 @@ public sealed class AutoPilotController : IDisposable
     private readonly ICondition _condition;
     private readonly ICommandManager _commandManager;
     private readonly VNavmeshIpcClient _navmesh;
+    private readonly TeleportHelper _teleportHelper;
+    private readonly FlagDestinationProvider _flagDestinationProvider;
     private readonly Configuration _config;
     private DateTimeOffset _lastMountAttemptAt = DateTimeOffset.MinValue;
 
     private DateTimeOffset _startedAt;
     private Vector3? _destination;
     private bool _isFlagNavigation;
+    private bool _waitingForTeleportZoneChange;
+    private uint _pendingFlagTerritoryId;
+    private DateTimeOffset _teleportRequestedAt;
     public AutoPilotState State { get; private set; } = AutoPilotState.Idle;
     public string StatusText { get; private set; } = "Idle";
 
@@ -39,6 +44,8 @@ public sealed class AutoPilotController : IDisposable
         ICondition condition,
         ICommandManager commandManager,
         VNavmeshIpcClient navmesh,
+        TeleportHelper teleportHelper,
+        FlagDestinationProvider flagDestinationProvider,
         Configuration config)
     {
         _clientState = clientState;
@@ -47,6 +54,8 @@ public sealed class AutoPilotController : IDisposable
         _condition = condition;
         _commandManager = commandManager;
         _navmesh = navmesh;
+        _teleportHelper = teleportHelper;
+        _flagDestinationProvider = flagDestinationProvider;
         _config = config;
 
         _framework.Update += OnFrameworkUpdate;
@@ -90,6 +99,27 @@ public sealed class AutoPilotController : IDisposable
             return false;
         }
 
+        if (_config.AutoTeleportOnZoneChangeForFlag &&
+            _flagDestinationProvider.TryGetFlagDestination(out var flagDestination) &&
+            flagDestination.TerritoryId != 0 &&
+            flagDestination.TerritoryId != _clientState.TerritoryType)
+        {
+            if (_teleportHelper.TryTeleportToTerritory(flagDestination.TerritoryId, out var teleportReason))
+            {
+                _startedAt = DateTimeOffset.UtcNow;
+                _destination = null;
+                _isFlagNavigation = true;
+                _waitingForTeleportZoneChange = true;
+                _pendingFlagTerritoryId = flagDestination.TerritoryId;
+                _teleportRequestedAt = DateTimeOffset.UtcNow;
+                State = AutoPilotState.Moving;
+                StatusText = teleportReason;
+                return true;
+            }
+
+            StatusText = $"Teleport unavailable ({teleportReason}), trying direct route...";
+        }
+
         TryAutoMount();
 
         var preferFlyParam = _config.PreferFlyingWhenPossible || _config.UseMountWhenPossible;
@@ -102,6 +132,8 @@ public sealed class AutoPilotController : IDisposable
         _startedAt = DateTimeOffset.UtcNow;
         _destination = null;
         _isFlagNavigation = true;
+        _waitingForTeleportZoneChange = false;
+        _pendingFlagTerritoryId = 0;
         State = AutoPilotState.Moving;
         StatusText = "Moving to map flag...";
         return true;
@@ -114,6 +146,8 @@ public sealed class AutoPilotController : IDisposable
         StatusText = reason;
         _destination = null;
         _isFlagNavigation = false;
+        _waitingForTeleportZoneChange = false;
+        _pendingFlagTerritoryId = 0;
     }
 
     public void Pause()
@@ -142,6 +176,33 @@ public sealed class AutoPilotController : IDisposable
         if (!_clientState.IsLoggedIn)
         {
             Fail("Player unavailable.");
+            return;
+        }
+
+        if (_waitingForTeleportZoneChange)
+        {
+            if (_clientState.TerritoryType == _pendingFlagTerritoryId)
+            {
+                _waitingForTeleportZoneChange = false;
+                _pendingFlagTerritoryId = 0;
+                TryAutoMount();
+                var preferFlyParam = _config.PreferFlyingWhenPossible || _config.UseMountWhenPossible;
+                if (!_navmesh.TryStartMoveToFlag(preferFlyParam))
+                {
+                    Fail("Teleported, but unable to start move-to-flag.");
+                    return;
+                }
+
+                StatusText = "Zone changed, moving to map flag...";
+                _startedAt = DateTimeOffset.UtcNow;
+                return;
+            }
+
+            if ((DateTimeOffset.UtcNow - _teleportRequestedAt).TotalSeconds > 30)
+            {
+                Fail("Zone change timeout after teleport request.");
+            }
+
             return;
         }
 
@@ -177,6 +238,8 @@ public sealed class AutoPilotController : IDisposable
         StatusText = reason;
         _destination = null;
         _isFlagNavigation = false;
+        _waitingForTeleportZoneChange = false;
+        _pendingFlagTerritoryId = 0;
         _log.Warning("[XIVPathAutopilot] {Reason}", reason);
     }
 

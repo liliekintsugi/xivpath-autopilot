@@ -1,4 +1,5 @@
 using Dalamud.Game.Command;
+using Dalamud.Game.ClientState.Aetherytes;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -23,6 +24,7 @@ public sealed class Plugin : IDalamudPlugin
         IClientState clientState,
         IFramework framework,
         ICondition condition,
+        IAetheryteList aetheryteList,
         IPluginLog log)
     {
         _commandManager = commandManager;
@@ -31,6 +33,8 @@ public sealed class Plugin : IDalamudPlugin
         _configuration.Initialize(pluginInterface);
 
         var navmesh = new VNavmeshIpcClient(pluginInterface, log);
+        var teleportHelper = new TeleportHelper(aetheryteList, log);
+        var flagDestinationProvider = new FlagDestinationProvider();
         var mapConverter = new MapCoordinateConverter();
         var questDestinations = new QuestDestinationProvider(log);
         _controller = new AutoPilotController(
@@ -40,6 +44,8 @@ public sealed class Plugin : IDalamudPlugin
             condition,
             commandManager,
             navmesh,
+            teleportHelper,
+            flagDestinationProvider,
             _configuration);
         _configWindow = new ConfigWindow(_configuration, _controller, mapConverter, questDestinations);
 

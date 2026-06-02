@@ -91,15 +91,19 @@ public sealed class ConfigWindow : Window
 
         if (_questDestinations.Count > 0)
         {
-            var labels = _questDestinations.Select(q => $"{q.Label} (Map {q.TargetMapId})").ToArray();
+            var labels = _questDestinations
+                .Select(q => q.TargetMapId != 0
+                    ? $"{q.Label} (Map {q.TargetMapId})"
+                    : $"{q.Label} (Quest map)")
+                .ToArray();
             ImGui.SetNextItemWidth(420);
             ImGui.Combo("##questDestinations", ref _selectedQuestDestination, labels, labels.Length);
 
             if (_selectedQuestDestination >= 0 &&
                 _selectedQuestDestination < _questDestinations.Count &&
-                ImGui.Button("Open selected quest map"))
+                ImGui.Button("Open selected quest destination"))
             {
-                _questDestinationProvider.TryOpenQuestMap(_questDestinations[_selectedQuestDestination].TargetMapId);
+                _questDestinationProvider.TryOpenQuestDestination(_questDestinations[_selectedQuestDestination]);
             }
 
             ImGui.SameLine();
@@ -147,6 +151,13 @@ public sealed class ConfigWindow : Window
         if (ImGui.Checkbox("Prefer flying when possible", ref preferFlight))
         {
             _config.PreferFlyingWhenPossible = preferFlight;
+            _config.Save();
+        }
+
+        var autoTeleport = _config.AutoTeleportOnZoneChangeForFlag;
+        if (ImGui.Checkbox("Auto-teleport for cross-zone flag", ref autoTeleport))
+        {
+            _config.AutoTeleportOnZoneChangeForFlag = autoTeleport;
             _config.Save();
         }
 

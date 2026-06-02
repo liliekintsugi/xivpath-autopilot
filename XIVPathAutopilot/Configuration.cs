@@ -13,6 +13,7 @@ public sealed class Configuration : IPluginConfiguration
     public float ArrivalDistance { get; set; } = 2.0f;
     public bool UseMountWhenPossible { get; set; } = true;
     public bool PreferFlyingWhenPossible { get; set; } = true;
+    public bool AutoTeleportOnZoneChangeForFlag { get; set; } = true;
     public bool EnableAntiStuck { get; set; } = true;
     public int StuckThresholdSeconds { get; set; } = 10;
     public float MinProgressDistancePerSample { get; set; } = 0.15f;

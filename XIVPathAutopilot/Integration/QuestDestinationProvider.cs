@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace XIVPathAutopilot.Integration;
@@ -22,6 +23,7 @@ public sealed class QuestDestinationProvider(IPluginLog log)
 
             CollectContainer(mapAgent->MapQuestLinkContainer, result, seen);
             CollectContainer(mapAgent->MiniMapQuestLinkContainer, result, seen);
+            CollectAcceptedQuestsFallback(result, seen);
 
             return result;
         }
@@ -65,6 +67,37 @@ public sealed class QuestDestinationProvider(IPluginLog log)
         }
     }
 
+    private static unsafe void CollectAcceptedQuestsFallback(
+        List<QuestDestination> result,
+        HashSet<(ushort QuestId, uint MapId)> seen)
+    {
+        var questManager = QuestManager.Instance();
+        if (questManager == null)
+        {
+            return;
+        }
+
+        foreach (ref var entry in questManager->NormalQuests)
+        {
+            if (entry.QuestId == 0)
+            {
+                continue;
+            }
+
+            if (result.Any(r => r.QuestId == entry.QuestId))
+            {
+                continue;
+            }
+
+            if (!seen.Add((entry.QuestId, 0)))
+            {
+                continue;
+            }
+
+            result.Add(new QuestDestination(entry.QuestId, 0, $"Quest #{entry.QuestId}"));
+        }
+    }
+
     public unsafe bool TryOpenQuestMap(uint mapId)
     {
         try
@@ -86,6 +119,37 @@ public sealed class QuestDestinationProvider(IPluginLog log)
         catch (Exception ex)
         {
             log.Warning(ex, "[XIVPathAutopilot] Unable to open quest map");
+            return false;
+        }
+    }
+
+    public unsafe bool TryOpenQuestDestination(QuestDestination destination)
+    {
+        if (destination.TargetMapId != 0)
+        {
+            return TryOpenQuestMap(destination.TargetMapId);
+        }
+
+        try
+        {
+            var mapAgent = AgentMap.Instance();
+            if (mapAgent == null || destination.QuestId == 0)
+            {
+                return false;
+            }
+
+            var info = stackalloc OpenMapInfo[1];
+            *info = default;
+            info->Type = MapType.QuestLog;
+            info->MapId = 0;
+            info->TerritoryId = 0;
+            info->QuestId = destination.QuestId;
+            mapAgent->OpenMap(info);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            log.Warning(ex, "[XIVPathAutopilot] Unable to open quest destination");
             return false;
         }
     }

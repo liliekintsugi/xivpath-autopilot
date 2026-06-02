@@ -8,6 +8,7 @@ Plugin Dalamud experimental pour piloter un deplacement vers une destination.
 - `Go to` depuis coordonnees carte (conversion auto map -> monde)
 - `Go to flag` (lit le drapeau carte puis lance le pathfind)
 - auto-mount (`/mount roulette`) au depart si option active
+- auto-teleport inter-zone sur `Go to flag` (si une aetheryte de la zone cible est debloquee)
 - Selecteur des destinations de quetes actives (ouvrir la carte cible)
 - Etat de navigation clair (idle/running/paused/arrived/failed)
 - Integration IPC `vnavmesh` (sans farming/automation bouclee)
@@ -50,7 +51,7 @@ Ce repo est un squelette technique "MVP scaffold":
 - Preference vol (toggle)
 - Anti-stuck basique (distance mini + timeout stuck)
 
-Note: pour une quete, le flow recommande est: selectionner la quete -> ouvrir la carte -> poser un drapeau -> "Go To Flag".
+Note: le selecteur de quetes combine les liens map actifs et un fallback sur les quetes acceptees, pour eviter les listes vides.
 
 ## GitHub Actions incluses
 
