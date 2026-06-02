@@ -12,34 +12,30 @@ namespace XIVPathAutopilot.Integration;
 public sealed class VNavmeshIpcClient
 {
     private readonly IPluginLog _log;
-    private readonly ICallGateSubscriber<Vector3, bool> _moveTo;
-    private readonly ICallGateSubscriber<bool> _moveToFlag;
-    private readonly ICallGateSubscriber<bool> _stop;
-    private readonly ICallGateSubscriber<bool> _pause;
-    private readonly ICallGateSubscriber<bool> _resume;
+    private readonly ICallGateSubscriber<Vector3, bool, bool> _pathfindAndMoveTo;
+    private readonly ICallGateSubscriber<object> _pathStop;
     private readonly ICallGateSubscriber<bool> _isRunning;
-    private readonly ICallGateSubscriber<bool, bool, bool> _setTravelPreferences;
+    private readonly ICallGateSubscriber<bool> _pathfindInProgress;
+    private readonly ICallGateSubscriber<bool, object> _setMovementAllowed;
 
     public VNavmeshIpcClient(IDalamudPluginInterface pluginInterface, IPluginLog log)
     {
         _log = log;
 
-        // NOTE: these names may differ depending on vnavmesh release.
-        _moveTo = pluginInterface.GetIpcSubscriber<Vector3, bool>("vnavmesh.PathfindAndMoveTo");
-        _moveToFlag = pluginInterface.GetIpcSubscriber<bool>("vnavmesh.PathfindAndMoveToFlag");
-        _stop = pluginInterface.GetIpcSubscriber<bool>("vnavmesh.Stop");
-        _pause = pluginInterface.GetIpcSubscriber<bool>("vnavmesh.Pause");
-        _resume = pluginInterface.GetIpcSubscriber<bool>("vnavmesh.Resume");
-        _isRunning = pluginInterface.GetIpcSubscriber<bool>("vnavmesh.IsRunning");
-        _setTravelPreferences =
-            pluginInterface.GetIpcSubscriber<bool, bool, bool>("vnavmesh.SetTravelPreferences");
+        _pathfindAndMoveTo =
+            pluginInterface.GetIpcSubscriber<Vector3, bool, bool>("vnavmesh.SimpleMove.PathfindAndMoveTo");
+        _pathStop = pluginInterface.GetIpcSubscriber<object>("vnavmesh.Path.Stop");
+        _isRunning = pluginInterface.GetIpcSubscriber<bool>("vnavmesh.Path.IsRunning");
+        _pathfindInProgress = pluginInterface.GetIpcSubscriber<bool>("vnavmesh.SimpleMove.PathfindInProgress");
+        _setMovementAllowed =
+            pluginInterface.GetIpcSubscriber<bool, object>("vnavmesh.Path.SetMovementAllowed");
     }
 
-    public bool TryStartMoveTo(Vector3 destination)
+    public bool TryStartMoveTo(Vector3 destination, bool preferFlight)
     {
         try
         {
-            return _moveTo.InvokeFunc(destination);
+            return _pathfindAndMoveTo.InvokeFunc(destination, preferFlight);
         }
         catch (Exception ex)
         {
@@ -50,35 +46,16 @@ public sealed class VNavmeshIpcClient
 
     public bool TryStartMoveToFlag()
     {
-        try
-        {
-            return _moveToFlag.InvokeFunc();
-        }
-        catch (Exception ex)
-        {
-            _log.Warning(ex, "[XIVPathAutopilot] vnavmesh move-to-flag IPC failed");
-            return false;
-        }
-    }
-
-    public bool TryConfigureTravelPreferences(bool useMount, bool preferFlight)
-    {
-        try
-        {
-            return _setTravelPreferences.InvokeFunc(useMount, preferFlight);
-        }
-        catch (Exception ex)
-        {
-            _log.Debug(ex, "[XIVPathAutopilot] vnavmesh travel preference IPC unavailable");
-            return false;
-        }
+        _log.Warning("[XIVPathAutopilot] Move-to-flag IPC not implemented in this build");
+        return false;
     }
 
     public bool TryStop()
     {
         try
         {
-            return _stop.InvokeFunc();
+            _pathStop.InvokeAction();
+            return true;
         }
         catch (Exception ex)
         {
@@ -91,7 +68,8 @@ public sealed class VNavmeshIpcClient
     {
         try
         {
-            return _pause.InvokeFunc();
+            _setMovementAllowed.InvokeAction(false);
+            return true;
         }
         catch (Exception ex)
         {
@@ -104,7 +82,8 @@ public sealed class VNavmeshIpcClient
     {
         try
         {
-            return _resume.InvokeFunc();
+            _setMovementAllowed.InvokeAction(true);
+            return true;
         }
         catch (Exception ex)
         {
@@ -113,16 +92,16 @@ public sealed class VNavmeshIpcClient
         }
     }
 
-    public bool TryIsRunning(out bool running)
+    public bool TryIsRunningOrPathfinding(out bool active)
     {
         try
         {
-            running = _isRunning.InvokeFunc();
+            active = _isRunning.InvokeFunc() || _pathfindInProgress.InvokeFunc();
             return true;
         }
         catch
         {
-            running = false;
+            active = false;
             return false;
         }
     }

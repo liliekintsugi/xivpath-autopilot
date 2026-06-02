@@ -5,7 +5,7 @@ Plugin Dalamud experimental pour piloter un deplacement vers une destination.
 ## Objectif
 
 - `Go to` manuel (coordonnees)
-- `Go to flag` (via IPC vnavmesh)
+- `Go to flag` (placeholder, selon support IPC vnavmesh)
 - Etat de navigation clair (idle/running/paused/arrived/failed)
 - Integration IPC `vnavmesh` (sans farming/automation bouclee)
 - Arret immediat manuel (`Stop`)
@@ -46,6 +46,8 @@ Ce repo est un squelette technique "MVP scaffold":
 - Utilisation monture (toggle)
 - Preference vol (toggle)
 - Anti-stuck basique (distance mini + timeout stuck)
+
+Note: selon version de vnavmesh, certaines operations (notamment "flag") peuvent ne pas etre exposees en IPC.
 
 ## Etape suivante recommandee
 

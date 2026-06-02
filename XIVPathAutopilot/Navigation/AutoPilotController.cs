@@ -51,8 +51,7 @@ public sealed class AutoPilotController : IDisposable
             return false;
         }
 
-        _navmesh.TryConfigureTravelPreferences(_config.UseMountWhenPossible, _config.PreferFlyingWhenPossible);
-        if (!_navmesh.TryStartMoveTo(destination))
+        if (!_navmesh.TryStartMoveTo(destination, _config.PreferFlyingWhenPossible))
         {
             Fail("Unable to start vnavmesh route.");
             return false;
@@ -74,7 +73,6 @@ public sealed class AutoPilotController : IDisposable
             return false;
         }
 
-        _navmesh.TryConfigureTravelPreferences(_config.UseMountWhenPossible, _config.PreferFlyingWhenPossible);
         if (!_navmesh.TryStartMoveToFlag())
         {
             Fail("Unable to start move-to-flag.");
@@ -135,7 +133,7 @@ public sealed class AutoPilotController : IDisposable
             return;
         }
 
-        if (_navmesh.TryIsRunning(out var running) && !running)
+        if (_navmesh.TryIsRunningOrPathfinding(out var running) && !running)
         {
             if (_isFlagNavigation)
             {
