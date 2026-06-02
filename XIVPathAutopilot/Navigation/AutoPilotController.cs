@@ -24,10 +24,6 @@ public sealed class AutoPilotController : IDisposable
     private DateTimeOffset _startedAt;
     private Vector3? _destination;
     private bool _isFlagNavigation;
-    private DateTimeOffset _lastStuckSampleAt = DateTimeOffset.UtcNow;
-    private Vector3 _lastStuckSamplePos;
-    private DateTimeOffset? _stuckSince;
-
     public AutoPilotState State { get; private set; } = AutoPilotState.Idle;
     public string StatusText { get; private set; } = "Idle";
 
@@ -49,9 +45,9 @@ public sealed class AutoPilotController : IDisposable
 
     public bool Start(Vector3 destination)
     {
-        if (_clientState.LocalPlayer is null)
+        if (!_clientState.IsLoggedIn)
         {
-            Fail("No local player.");
+            Fail("Not logged in.");
             return false;
         }
 
@@ -62,7 +58,6 @@ public sealed class AutoPilotController : IDisposable
             return false;
         }
 
-        ResetMovementTracking();
         _startedAt = DateTimeOffset.UtcNow;
         _destination = destination;
         _isFlagNavigation = false;
@@ -73,9 +68,9 @@ public sealed class AutoPilotController : IDisposable
 
     public bool StartToFlag()
     {
-        if (_clientState.LocalPlayer is null)
+        if (!_clientState.IsLoggedIn)
         {
-            Fail("No local player.");
+            Fail("Not logged in.");
             return false;
         }
 
@@ -86,7 +81,6 @@ public sealed class AutoPilotController : IDisposable
             return false;
         }
 
-        ResetMovementTracking();
         _startedAt = DateTimeOffset.UtcNow;
         _destination = null;
         _isFlagNavigation = true;
@@ -102,7 +96,6 @@ public sealed class AutoPilotController : IDisposable
         StatusText = reason;
         _destination = null;
         _isFlagNavigation = false;
-        _stuckSince = null;
     }
 
     public void Pause()
@@ -128,24 +121,10 @@ public sealed class AutoPilotController : IDisposable
     private void OnFrameworkUpdate(IFramework _)
     {
         if (State is not AutoPilotState.Moving) return;
-        if (_clientState.LocalPlayer is null)
+        if (!_clientState.IsLoggedIn)
         {
             Fail("Player unavailable.");
             return;
-        }
-
-        var position = _clientState.LocalPlayer.Position;
-        if (_destination is not null)
-        {
-            var distance = Vector3.Distance(position, _destination.Value);
-            if (distance <= _config.ArrivalDistance)
-            {
-                State = AutoPilotState.Arrived;
-                StatusText = "Arrived.";
-                _destination = null;
-                _isFlagNavigation = false;
-                return;
-            }
         }
 
         if (_config.EnableSafetyTimeout &&
@@ -156,9 +135,6 @@ public sealed class AutoPilotController : IDisposable
             return;
         }
 
-        if (_config.EnableAntiStuck)
-            UpdateAntiStuck(position);
-
         if (_navmesh.TryIsRunning(out var running) && !running)
         {
             if (_isFlagNavigation)
@@ -166,44 +142,15 @@ public sealed class AutoPilotController : IDisposable
                 State = AutoPilotState.Arrived;
                 StatusText = "Flag route completed.";
                 _isFlagNavigation = false;
+                _destination = null;
             }
             else
             {
-                Fail("Navigation stopped unexpectedly.");
+                State = AutoPilotState.Arrived;
+                StatusText = "Route completed.";
+                _destination = null;
             }
         }
-    }
-
-    private void UpdateAntiStuck(Vector3 position)
-    {
-        var now = DateTimeOffset.UtcNow;
-        if ((now - _lastStuckSampleAt).TotalSeconds < 1) return;
-
-        var moved = Vector3.Distance(position, _lastStuckSamplePos);
-        if (moved < _config.MinProgressDistancePerSample)
-        {
-            _stuckSince ??= now;
-            if ((now - _stuckSince.Value).TotalSeconds >= _config.StuckThresholdSeconds)
-            {
-                _navmesh.TryStop();
-                Fail("Stuck detected.");
-            }
-        }
-        else
-        {
-            _stuckSince = null;
-        }
-
-        _lastStuckSampleAt = now;
-        _lastStuckSamplePos = position;
-    }
-
-    private void ResetMovementTracking()
-    {
-        if (_clientState.LocalPlayer is not null)
-            _lastStuckSamplePos = _clientState.LocalPlayer.Position;
-        _lastStuckSampleAt = DateTimeOffset.UtcNow;
-        _stuckSince = null;
     }
 
     private void Fail(string reason)
