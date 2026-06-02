@@ -3,7 +3,7 @@
     "Author": "liliekintsugi",
     "Name": "XIVPath Autopilot",
     "InternalName": "XIVPathAutopilot",
-    "AssemblyVersion": "0.1.2.0",
+    "AssemblyVersion": "0.1.3.0",
     "Punchline": "Experimental point-to-point autopilot helper.",
     "Description": "Manual destination autopilot scaffold for XIVPath. Uses vnavmesh IPC hooks when available.",
     "ApplicableVersion": "any",
@@ -21,7 +21,7 @@
     "DownloadLinkUpdate": "https://github.com/liliekintsugi/xivpath-autopilot/releases/latest/download/latest.zip",
     "DownloadLinkTesting": "https://github.com/liliekintsugi/xivpath-autopilot/releases/latest/download/latest.zip",
     "DownloadCount": 0,
-    "LastUpdate": 1780423870,
+    "LastUpdate": 1780424153,
     "IconUrl": "",
     "ImageUrls": []
   }
