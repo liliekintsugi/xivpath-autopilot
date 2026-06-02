@@ -17,28 +17,11 @@ public sealed class QuestDestinationProvider(IPluginLog log)
                 return [];
             }
 
-            var container = mapAgent->MapQuestLinkContainer;
-            var count = Math.Min(container.MarkerCount, (ushort)20);
-            if (count == 0)
-            {
-                return [];
-            }
+            var result = new List<QuestDestination>(20);
+            var seen = new HashSet<(ushort QuestId, uint MapId)>();
 
-            var result = new List<QuestDestination>(count);
-            for (var i = 0; i < count; i++)
-            {
-                var marker = container.Markers[i];
-                if (marker.Valid == 0 || marker.TargetMapId == 0)
-                {
-                    continue;
-                }
-
-                var tooltip = marker.TooltipText.ToString();
-                var label = string.IsNullOrWhiteSpace(tooltip)
-                    ? $"Quest #{marker.QuestId} (Map {marker.TargetMapId})"
-                    : tooltip;
-                result.Add(new QuestDestination(marker.QuestId, marker.TargetMapId, label));
-            }
+            CollectContainer(mapAgent->MapQuestLinkContainer, result, seen);
+            CollectContainer(mapAgent->MiniMapQuestLinkContainer, result, seen);
 
             return result;
         }
@@ -46,6 +29,39 @@ public sealed class QuestDestinationProvider(IPluginLog log)
         {
             log.Debug(ex, "[XIVPathAutopilot] Unable to read quest map links");
             return [];
+        }
+    }
+
+    private static unsafe void CollectContainer(
+        QuestLinkContainer container,
+        List<QuestDestination> result,
+        HashSet<(ushort QuestId, uint MapId)> seen)
+    {
+        var count = Math.Min(container.MarkerCount, (ushort)20);
+        for (var i = 0; i < count; i++)
+        {
+            var marker = container.Markers[i];
+            if (marker.Valid == 0)
+            {
+                continue;
+            }
+
+            var mapId = marker.TargetMapId != 0 ? marker.TargetMapId : marker.SourceMapId;
+            if (mapId == 0)
+            {
+                continue;
+            }
+
+            if (!seen.Add((marker.QuestId, mapId)))
+            {
+                continue;
+            }
+
+            var tooltip = marker.TooltipText.ToString();
+            var label = string.IsNullOrWhiteSpace(tooltip)
+                ? $"Quest #{marker.QuestId} (Map {mapId})"
+                : tooltip;
+            result.Add(new QuestDestination(marker.QuestId, mapId, label));
         }
     }
 

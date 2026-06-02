@@ -7,6 +7,7 @@ Plugin Dalamud experimental pour piloter un deplacement vers une destination.
 - `Go to` manuel (coordonnees monde)
 - `Go to` depuis coordonnees carte (conversion auto map -> monde)
 - `Go to flag` (lit le drapeau carte puis lance le pathfind)
+- auto-mount (`/mount roulette`) au depart si option active
 - Selecteur des destinations de quetes actives (ouvrir la carte cible)
 - Etat de navigation clair (idle/running/paused/arrived/failed)
 - Integration IPC `vnavmesh` (sans farming/automation bouclee)

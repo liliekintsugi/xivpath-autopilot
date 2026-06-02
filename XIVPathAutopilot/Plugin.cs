@@ -22,6 +22,8 @@ public sealed class Plugin : IDalamudPlugin
         ICommandManager commandManager,
         IClientState clientState,
         IFramework framework,
+        ICondition condition,
+        IChatGui chatGui,
         IPluginLog log)
     {
         _commandManager = commandManager;
@@ -32,7 +34,14 @@ public sealed class Plugin : IDalamudPlugin
         var navmesh = new VNavmeshIpcClient(pluginInterface, log);
         var mapConverter = new MapCoordinateConverter();
         var questDestinations = new QuestDestinationProvider(log);
-        _controller = new AutoPilotController(clientState, framework, log, navmesh, _configuration);
+        _controller = new AutoPilotController(
+            clientState,
+            framework,
+            log,
+            condition,
+            chatGui,
+            navmesh,
+            _configuration);
         _configWindow = new ConfigWindow(_configuration, _controller, mapConverter, questDestinations);
 
         _windowSystem.AddWindow(_configWindow);

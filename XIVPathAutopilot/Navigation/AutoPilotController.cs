@@ -1,4 +1,5 @@
 using System.Numerics;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Plugin.Services;
 using XIVPathAutopilot.Integration;
 
@@ -18,8 +19,11 @@ public sealed class AutoPilotController : IDisposable
     private readonly IClientState _clientState;
     private readonly IFramework _framework;
     private readonly IPluginLog _log;
+    private readonly ICondition _condition;
+    private readonly IChatGui _chatGui;
     private readonly VNavmeshIpcClient _navmesh;
     private readonly Configuration _config;
+    private DateTimeOffset _lastMountAttemptAt = DateTimeOffset.MinValue;
 
     private DateTimeOffset _startedAt;
     private Vector3? _destination;
@@ -31,12 +35,16 @@ public sealed class AutoPilotController : IDisposable
         IClientState clientState,
         IFramework framework,
         IPluginLog log,
+        ICondition condition,
+        IChatGui chatGui,
         VNavmeshIpcClient navmesh,
         Configuration config)
     {
         _clientState = clientState;
         _framework = framework;
         _log = log;
+        _condition = condition;
+        _chatGui = chatGui;
         _navmesh = navmesh;
         _config = config;
 
@@ -51,12 +59,15 @@ public sealed class AutoPilotController : IDisposable
             return false;
         }
 
+        TryAutoMount();
+
         if (_navmesh.TrySnapToNearestPoint(destination, out var snapped))
         {
             destination = snapped;
         }
 
-        if (!_navmesh.TryStartMoveTo(destination, _config.PreferFlyingWhenPossible))
+        var preferFlyParam = _config.PreferFlyingWhenPossible || _config.UseMountWhenPossible;
+        if (!_navmesh.TryStartMoveTo(destination, preferFlyParam))
         {
             Fail("Unable to start vnavmesh route.");
             return false;
@@ -78,7 +89,10 @@ public sealed class AutoPilotController : IDisposable
             return false;
         }
 
-        if (!_navmesh.TryStartMoveToFlag(_config.PreferFlyingWhenPossible))
+        TryAutoMount();
+
+        var preferFlyParam = _config.PreferFlyingWhenPossible || _config.UseMountWhenPossible;
+        if (!_navmesh.TryStartMoveToFlag(preferFlyParam))
         {
             Fail("Unable to start move-to-flag.");
             return false;
@@ -163,6 +177,18 @@ public sealed class AutoPilotController : IDisposable
         _destination = null;
         _isFlagNavigation = false;
         _log.Warning("[XIVPathAutopilot] {Reason}", reason);
+    }
+
+    private void TryAutoMount()
+    {
+        if (!_config.UseMountWhenPossible) return;
+        if (_condition[ConditionFlag.Mounted]) return;
+        if ((DateTimeOffset.UtcNow - _lastMountAttemptAt).TotalSeconds < 3) return;
+
+        if (_chatGui.SendMessage("/mount roulette"))
+        {
+            _lastMountAttemptAt = DateTimeOffset.UtcNow;
+        }
     }
 
     public void Dispose()
